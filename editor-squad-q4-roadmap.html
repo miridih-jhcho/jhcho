@@ -26,7 +26,8 @@
          Task 행(✓)  → "PD·MB·QA"            역할만
          Subtask 행  → "PD 1 · MB 1 · QA 1"   역할별 인원(시트 숫자). 숫자는 굵게.
          change가 있으면 → 왼쪽은 시작 인원, 변경일 위치에 세로 눈금 + "MF 3 · QA 2". 툴팁에 전/후 풀어쓰기.
-     · Task 행을 클릭하면 아래 Subtask 행이 접히고 다시 클릭하면 펼쳐진다 (라벨 왼쪽 ▸/▾, 접힘 건수 표시).
+     · Task 행을 클릭하면 아래 Subtask 행이 접히고 다시 클릭하면 펼쳐진다.
+       토글은 라벨 왼쪽 트리 노드 점 — 펼침은 빈 고리에서 연결선이 내려가고, 접힘은 채워진 점 + 접힘 건수.
      · '오늘'은 열람 시각에서 계산한다 — 열 강조 + 미래 음영. 호버하면 날짜 선이 커서를 따라간다.
      · 갱신은 ANCHORS/ITEMS 편집이 전부 — 좌표는 자동.
      · 다크모드 비지원(라이트 고정): 레인 팔레트가 라이트 서피스 기준 검증됨. -->
@@ -436,24 +437,47 @@
   .gt-row.sub {
     height: 34px;
   }
-  /* 접기/펼치기 — Task 행 클릭으로 아래 Subtask 행을 숨긴다 */
+  /* 접기/펼치기 — Task 행 클릭으로 아래 Subtask 행을 숨긴다.
+     토글은 트리 노드 점: Subtask 연결선(left 13px)의 시작점에 놓인 고리.
+     펼침 = 빈 고리 + 아래로 이어지는 선, 접힘 = 채워진 점, 선 없음 */
   .gt-row.task.has-subs {
     cursor: pointer;
   }
+  .gt-row.task.has-subs .gt-lbl {
+    padding-left: 22px;
+  }
   .gt-row.task .tg {
     position: absolute;
-    left: 3px;
+    left: 10px;
     top: 50%;
-    width: 0;
-    height: 0;
-    transform: translateY(-50%) rotate(90deg);
-    border-left: 5px solid color-mix(in srgb, var(--lc) 70%, var(--card));
-    border-top: 4px solid transparent;
-    border-bottom: 4px solid transparent;
-    transition: transform 0.15s ease;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    border: 1.5px solid color-mix(in srgb, var(--lc) 70%, var(--card));
+    background: var(--card);
+    transform: translateY(-50%);
+    transition: background 0.15s ease, border-color 0.15s ease;
+    z-index: 1;
+  }
+  .gt-row.task.has-subs .gt-lbl::after {
+    content: "";
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    bottom: 0;
+    border-left: 1.5px solid color-mix(in srgb, var(--lc) 35%, var(--card));
   }
   .gt-row.task.folded .tg {
-    transform: translateY(-50%) rotate(0deg);
+    background: color-mix(in srgb, var(--lc) 70%, var(--card));
+  }
+  .gt-row.task.folded .gt-lbl::after {
+    display: none;
+  }
+  .gt-row.task.has-subs:hover .tg {
+    border-color: var(--lc);
+  }
+  .gt-row.task.folded:hover .tg {
+    background: var(--lc);
   }
   .gt-row.task .fold-n {
     display: none;
