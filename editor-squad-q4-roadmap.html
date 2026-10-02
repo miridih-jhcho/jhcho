@@ -13,6 +13,7 @@
        행 왼쪽 고정 칸에는 기간·상태, 오른쪽 날짜축에는 기간만큼의 선과 그 위에 제목.
      · Task 행의 선은 테두리만 있다 — 구간 = 시트 Task 날짜 ∪ Subtask 날짜 ∪ 목표일.
        Note의 "목표" 날짜(goal)는 Task 행에 마름모 + '목표 MM/DD' 배지로 붙는다.
+       goal이 없으면 점선 '목표 미정' 배지 (하위가 전부 완료된 Task는 생략).
        Subtask가 없는 Task는 자기 선을 채움 선으로 그린다.
      · Subtask kind로 선 모양이 정해진다.
          done  진한 선(100%)                — 완료(Progress 100)
@@ -518,6 +519,13 @@
     border-radius: 999px;
     padding: 0 6px;
     line-height: 1.5;
+  }
+  /* 목표 미정 — 점선 테두리, 흐린 글자 */
+  .ttl .goal.none {
+    font-weight: 500;
+    color: var(--muted);
+    border-style: dashed;
+    border-color: color-mix(in srgb, var(--muted) 70%, var(--card));
   }
   @keyframes barIn {
     from {
@@ -1157,13 +1165,16 @@
             const sp = taskSpan(t);
             const dl = spanLabel(sp);
             const certHtml = t.cert ? chip(t.cert) : "";
+            /* 목표일 배지 — 없으면 '목표 미정'(점선). 하위가 전부 완료된 Task는 목표가 의미 없어 생략 */
             const goalHtml = t.goal
               ? `<span class="goal">목표 ${slash(t.goal)}</span>`
-              : "";
+              : allDone(t)
+                ? ""
+                : `<span class="goal none">목표 미정</span>`;
             const title = `<b>${esc(t.s)}</b>`;
             let cells;
             if (!sp) {
-              cells = tbdCells(title, certHtml, delay);
+              cells = tbdCells(title, goalHtml + certHtml, delay);
             } else if (t.subs.length) {
               /* Subtask가 있는 Task: 전체 구간을 테두리 선으로 감싼다 */
               cells = barCells({
