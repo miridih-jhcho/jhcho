@@ -20,7 +20,9 @@
          plan  옅은 선                       — 예정
          tbd   선 없음, 왼쪽에 흐린 제목     — Start/End Date가 비어 있는 검토중·미정 항목
        e(종료일)가 없으면 open: 선이 범위 끝까지 이어지다 흐려진다.
-     · 담당(who)은 시트 PD·MF·MB·BF·BB·QA 열의 ✓/숫자를 그대로 옮긴다. 툴팁 하단에 표시.
+     · 담당(who)은 시트 PD·MF·MB·BF·BB·QA 열을 그대로 옮긴다. 선 제목 옆 + 툴팁 하단에 표시.
+         Task 행(✓)  → "PD·MB·QA"            역할만
+         Subtask 행  → "PD 1 · MB 1 · QA 1"   역할별 인원(시트 숫자). 숫자는 굵게.
      · '오늘'은 열람 시각에서 계산한다 — 열 강조 + 미래 음영. 호버하면 날짜 선이 커서를 따라간다.
      · 갱신은 ANCHORS/ITEMS 편집이 전부 — 좌표는 자동.
      · 다크모드 비지원(라이트 고정): 레인 팔레트가 라이트 서피스 기준 검증됨. -->
@@ -485,6 +487,13 @@
     color: var(--muted);
     font-weight: 500;
   }
+  .ttl .who b {
+    font-weight: 700;
+    color: var(--ink2);
+  }
+  .ttl .who .sep {
+    opacity: 0.5;
+  }
   .ttl.plan {
     color: var(--ink2);
   }
@@ -712,9 +721,9 @@
       who: "PD·MB·QA",
       t: "[미캔] 디자인 1.0 → 2.0 변환 마이그레이션 — 26.1020 종료 목표. 전환기간 풀 확장 → 유예 기간 → 전환 팝업 미노출 + 종료 순",
       subs: [
-        { kind: "done", d: "09-07", e: "09-19", s: "전환기간 풀 확장", who: "PD·MB·QA", prog: 100 },
-        { kind: "doing", d: "09-07", e: "10-20", s: "전환기간 유예 기간", who: "PD·MB", prog: 50 },
-        { kind: "plan", d: "10-20", e: "10-20", s: "전환 팝업 미노출 + 종료", who: "PD·MB", prog: 0 },
+        { kind: "done", d: "09-07", e: "09-19", s: "전환기간 풀 확장", who: "PD 1 · MB 1 · QA 1", prog: 100 },
+        { kind: "doing", d: "09-07", e: "10-20", s: "전환기간 유예 기간", who: "PD 1 · MB 1", prog: 50 },
+        { kind: "plan", d: "10-20", e: "10-20", s: "전환 팝업 미노출 + 종료", who: "PD 1 · MB 1", prog: 0 },
       ],
     },
     {
@@ -729,7 +738,7 @@
           kind: "plan",
           d: "10-20",
           s: "아카이빙 시작 (오래된 순서대로)",
-          who: "MB",
+          who: "MB 1",
           prog: 0,
           t: "아카이빙 시작 — 오래된 순서대로 아카이빙 시작, 종료일 미정",
         },
@@ -750,7 +759,7 @@
           d: "09-08",
           e: "10-20",
           s: "인쇄물제작 오픈 가능한 최소 스펙",
-          who: "MF·QA",
+          who: "MF 5 · QA 2",
           prog: 5,
           t: "인쇄물제작 오픈 가능한 최소 스펙 — 종료 일정에 맞춘 취소 스펙을 준비",
         },
@@ -771,7 +780,7 @@
           d: "10-20",
           e: "11-17",
           s: "1달 동안 모든 상품 오픈",
-          who: "MF·BF·BB·QA",
+          who: "MF 3 · BF 1 · BB 1 · QA 1",
           prog: 0,
         },
       ],
@@ -786,9 +795,9 @@
       who: "PD·MF·BF·BB·QA",
       t: "[비즈] 장바구니 1.0 → 2.0 에디터 오픈 — 26.1027 목표. 공수 파악·디자인 작업 선행 후 실제 작업",
       subs: [
-        { kind: "plan", d: "10-06", e: "10-08", s: "공수 파악 필요", who: "MF·BF", prog: 0 },
-        { kind: "plan", d: "10-06", e: "10-08", s: "디자인 작업", who: "PD", prog: 0 },
-        { kind: "plan", d: "10-12", e: "10-27", s: "실제 작업", who: "MF·BF·BB·QA", prog: 0 },
+        { kind: "plan", d: "10-06", e: "10-08", s: "공수 파악 필요", who: "MF 1 · BF 1", prog: 0 },
+        { kind: "plan", d: "10-06", e: "10-08", s: "디자인 작업", who: "PD 1", prog: 0 },
+        { kind: "plan", d: "10-12", e: "10-27", s: "실제 작업", who: "MF 1 · BF 1 · BB 1 · QA 1", prog: 0 },
       ],
     },
     {
@@ -805,7 +814,7 @@
           d: "11-03",
           e: "12-31",
           s: "중요도 기준으로 정리 (30개 중 절반 이상)",
-          who: "PD·MF·BF·BB·QA",
+          who: "PD 1 · MF 3 · BF 1 · BB 1 · QA 1",
           prog: 0,
           t: "중요도 기준으로 정리 필요 — 30개를 모두는 못하지만 절반 이상은 처리할 수 있다",
         },
@@ -823,7 +832,7 @@
       who: "PD·MF·MB·BF·BB",
       t: "[비즈] 장바구니 > 대량 제작 — 검토중 (아마 안 할 듯)",
       subs: [
-        { kind: "done", d: "09-29", e: "09-30", s: "개발 공수 검토", who: "PD·MF·MB·BF·BB", prog: 100 },
+        { kind: "done", d: "09-29", e: "09-30", s: "개발 공수 검토", who: "PD 1 · MF 1 · MB 1 · BF 1 · BB 1", prog: 100 },
       ],
     },
     {
@@ -857,14 +866,14 @@
           d: "10-12",
           e: "11-17",
           s: "보통 (13) + 중요 (1) · 모바일 필수 해결 티켓",
-          who: "PD·MF·QA",
+          who: "PD 1 · MF 1 · QA 1",
           prog: 0,
         },
         {
           kind: "tbd",
           dl: "미정",
           s: "사소한 (16)",
-          who: "PD·MF",
+          who: "PD 1 · MF 2",
           t: "사소한 16건 — 필수 작업 항목은 아님. 한다면 PD 작업 선행 필요 다수",
         },
         { kind: "tbd", dl: "장기", s: "기능 조직 (3)", t: "기능 조직 3건 — 장기 백로그 상태" },
@@ -885,7 +894,7 @@
       s: "영구삭제 리소스 저장소 회수",
       d: "09-07",
       st: "진행중",
-      who: "PD",
+      who: "PD 1",
       t: "영구삭제 리소스 저장소 회수 — PD + 기능 조직, 스토리지 비용 절감 목표. 시트에 일정 없음(진행중)",
       subs: [],
     },
@@ -1004,7 +1013,14 @@
     let gi = 0;
     const tipAttr = (o, dl) =>
       `data-d="${esc(dl)}" data-tip="${esc(o.t || o.s)}"${o.who ? ` data-sub="${esc("담당 " + o.who)}"` : ""}`;
-    const whoHtml = (o) => (o.who ? `<span class="who">${esc(o.who)}</span>` : "");
+    /* 담당 — "PD 1 · MB 1"처럼 역할 뒤 숫자(인원)가 있으면 숫자를 굵게, 없으면(Task ✓ 행) 그대로 */
+    const whoHtml = (o) =>
+      o.who
+        ? `<span class="who">${o.who
+            .split(" · ")
+            .map((tok) => tok.replace(/^([A-Z]{2}) (\d+)$/, (_, r, n) => `${r}&nbsp;<b>${n}</b>`))
+            .join(' <span class="sep">·</span> ')}</span>`
+        : "";
 
     /* 공통 행 — cells(선+제목)와 lbl(왼쪽 고정 칸)을 받아 행 하나를 만든다 */
     const row = (k, cls, tip, lbl, cells, W) =>
