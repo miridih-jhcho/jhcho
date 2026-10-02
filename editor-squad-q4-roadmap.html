@@ -1,0 +1,1211 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<!-- 에디터스쿼드 4분기 로드맵 — 시각 정본 (빌드 2026-10-02, v2 간트형)
+     데이터 정본(구글 시트): 에디터스쿼드_4분기 › WBS 탭
+     https://docs.google.com/spreadsheets/d/1CWVos7PJPLweo0r2pSx6t0BJwKjPo3iot3NaLrp-sv8/edit
+     기간: 26.09.07 ~ 26.12.31 — 아래 데이터 배열 밖 서술 금지. 시트에 없는 날짜는 넣지 않는다.
+
+     ── 표현 정책 ──
+     · 상단 날짜축은 시트의 WBS 열과 같다: 평일만(월~금), 한 칸 = 하루. 주 시작(월)에 굵은 눈금.
+       평일에 걸리는 공휴일(HOLIDAYS)은 붉은 숫자 + 2자 라벨, 본문 열에 붉은 음영. 주말 공휴일은 대체공휴일만.
+     · 시트의 3단 구조를 그대로 옮긴다: Group(구분 행) › Task(테두리 선 행) › Subtask(채움 선 행, 들여쓰기).
+       행 왼쪽 고정 칸에는 기간·상태, 오른쪽 날짜축에는 기간만큼의 선과 그 위에 제목.
+     · Task 행의 선은 테두리만 있다 — 구간 = 시트 Task 날짜 ∪ Subtask 날짜 ∪ 목표일.
+       Note의 "목표" 날짜(goal)는 Task 행에 마름모 + '목표 MM/DD' 배지로 붙는다.
+       Subtask가 없는 Task는 자기 선을 채움 선으로 그린다.
+     · Subtask kind로 선 모양이 정해진다.
+         done  진한 선(100%)                — 완료(Progress 100)
+         doing 옅은 선 + 진한 채움(prog %)  — 진행중 (prog = 시트 Progress %)
+         plan  옅은 선                       — 예정
+         tbd   선 없음, 왼쪽에 흐린 제목     — Start/End Date가 비어 있는 검토중·미정 항목
+       e(종료일)가 없으면 open: 선이 범위 끝까지 이어지다 흐려진다.
+     · 담당(who)은 시트 PD·MF·MB·BF·BB·QA 열의 ✓/숫자를 그대로 옮긴다. 툴팁 하단에 표시.
+     · '오늘'은 열람 시각에서 계산한다 — 열 강조 + 미래 음영. 호버하면 날짜 선이 커서를 따라간다.
+     · 갱신은 ANCHORS/ITEMS 편집이 전부 — 좌표는 자동.
+     · 다크모드 비지원(라이트 고정): 레인 팔레트가 라이트 서피스 기준 검증됨. -->
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>에디터스쿼드 4분기 로드맵</title>
+<meta name="color-scheme" content="light" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600;800&display=swap"
+  rel="stylesheet"
+/>
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  /* 레이아웃: 제목 → 시트형 간트(왼쪽 고정 칸 + 평일 열 날짜축, 가로·세로 스크롤은 카드 안에서) → 범례 */
+  :root {
+    color-scheme: light;
+    --paper: #f9f9f7;
+    --card: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink2: #52514e;
+    --muted: #898781;
+    --hair: #e1e0d9;
+    --axis: #c3c2b7;
+    --ring: rgba(11, 11, 11, 0.1);
+    --today: #ffd68a;
+    --hol: #d6453c;
+    --t-end: #2a78d6;
+    --t-undev: #eb6834;
+    --t-mob: #1baf7a;
+    --t-cto: #8a5cf6;
+    --eo: cubic-bezier(0.23, 1, 0.32, 1);
+    --sans: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+    --dw: 26px; /* 하루 열 폭 */
+    --lw: 168px; /* 왼쪽 고정 칸 폭 */
+    --rh: 38px; /* 항목 행 높이 */
+    --hh: 48px; /* 날짜축 높이 */
+  }
+  html,
+  body {
+    background: var(--paper);
+  }
+  body {
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    background-image: radial-gradient(rgba(11, 11, 11, 0.028) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+  ::selection {
+    background: rgba(42, 120, 214, 0.18);
+  }
+  .lane-end {
+    --lc: var(--t-end);
+  }
+  .lane-undev {
+    --lc: var(--t-undev);
+  }
+  .lane-mob {
+    --lc: var(--t-mob);
+  }
+  .lane-cto {
+    --lc: var(--t-cto);
+  }
+
+  .cert {
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+    padding: 1px 7px;
+    border-radius: 999px;
+    white-space: nowrap;
+    vertical-align: middle;
+    line-height: 1.5;
+  }
+  .cert-goal {
+    color: var(--ink);
+    border: 1.5px solid var(--ink);
+  }
+  .cert-tent {
+    color: var(--ink2);
+    border: 1.5px dashed var(--axis);
+  }
+  .cert-rev {
+    color: var(--ink2);
+    border: 1.5px dotted var(--axis);
+  }
+
+  .pop {
+    opacity: 0;
+    transform: translateY(10px);
+    animation: popIn 0.4s var(--eo) forwards;
+  }
+  @keyframes popIn {
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--lc, var(--muted));
+    flex: none;
+  }
+
+  .vc {
+    margin: 0 auto;
+    padding-block: 40px 44px;
+    padding-inline: 26px;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+  @media (max-width: 600px) {
+    .vc {
+      padding-inline: 16px;
+    }
+  }
+  .vc-head {
+    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 16px;
+  }
+  .vc-head h1 {
+    font-size: clamp(25px, 3.6vw, 33px);
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    text-wrap: balance;
+  }
+  .vc-head .period {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+
+  /* ── 간트 카드 ── */
+  .gt-wrap {
+    position: relative;
+    background: var(--card);
+    border: 1px solid var(--ring);
+    border-radius: 14px;
+    overflow: auto;
+    max-height: calc(100dvh - 200px);
+    min-height: 320px;
+    flex: 1;
+    overscroll-behavior-x: contain;
+  }
+  .gt {
+    position: relative;
+    width: max-content;
+    min-width: 100%;
+    font-variant-numeric: tabular-nums;
+  }
+  /* 날짜축 */
+  .gt-head {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    height: var(--hh);
+    background: var(--card);
+    border-bottom: 1px solid var(--hair);
+  }
+  .gt-corner {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    flex: none;
+    width: var(--lw);
+    background: var(--card);
+    border-right: 1px solid var(--hair);
+    display: flex;
+    align-items: flex-end;
+    padding: 0 12px 6px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+  .gt-days {
+    position: relative;
+    flex: none;
+    height: 100%;
+  }
+  .gt-month {
+    position: absolute;
+    top: 6px;
+    height: 16px;
+    padding-left: 7px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink2);
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    border-left: 1px solid var(--axis);
+    line-height: 16px;
+  }
+  .gt-day {
+    position: absolute;
+    bottom: 0;
+    width: var(--dw);
+    height: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    padding-bottom: 3px;
+    font-family: var(--mono);
+    font-size: 10px;
+    line-height: 1.1;
+    color: var(--ink2);
+    border-left: 1px solid transparent;
+  }
+  .gt-day.mon {
+    border-left-color: var(--hair);
+  }
+  .gt-day .w {
+    font-family: var(--sans);
+    font-size: 9px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  /* 공휴일 — 숫자와 라벨을 붉게, 본문 열에 옅은 붉은 음영 */
+  .gt-day.hol,
+  .gt-day.hol .w {
+    color: var(--hol);
+  }
+  .gt-day.hol .w {
+    font-weight: 600;
+  }
+  .gt-col.holcol {
+    width: auto;
+    background: var(--hol);
+    opacity: 0.07;
+  }
+  .gt-day.today {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .gt-day.today::before {
+    content: "";
+    position: absolute;
+    inset: -2px 2px 1px;
+    border-radius: 6px;
+    background: var(--today);
+    opacity: 0.55;
+    z-index: -1;
+  }
+  .gt-day.today .w {
+    color: var(--ink2);
+  }
+
+  /* 본문 */
+  .gt-body {
+    position: relative;
+  }
+  .gt-grid {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--lw);
+    pointer-events: none;
+  }
+  .gt-col {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: rgba(11, 11, 11, 0.045);
+  }
+  .gt-col.mon {
+    background: var(--hair);
+  }
+  .gt-col.future {
+    width: auto;
+    background: rgba(11, 11, 11, 0.026);
+  }
+  .gt-col.todaycol {
+    background: var(--today);
+    opacity: 0.22;
+  }
+  .gt-row {
+    position: relative;
+    display: flex;
+    height: var(--rh);
+    border-top: 1px dashed rgba(11, 11, 11, 0.06);
+  }
+  .gt-row.group {
+    height: 34px;
+    border-top: 1px solid var(--hair);
+    background: color-mix(in srgb, var(--lc) 5%, var(--card));
+  }
+  .gt-row.group:first-child {
+    border-top: none;
+  }
+  .gt-lbl {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    flex: none;
+    width: var(--lw);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1px;
+    padding: 0 12px;
+    background: color-mix(in srgb, var(--card) 94%, transparent);
+    border-right: 1px solid var(--hair);
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .gt-row.group .gt-lbl {
+    flex-direction: row;
+    align-items: center;
+    gap: 7px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--ink2);
+    background: transparent;
+    border-right-color: transparent;
+    width: auto;
+    padding-right: 16px;
+  }
+  .gt-lbl .dt {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink2);
+    letter-spacing: 0.02em;
+  }
+  .gt-lbl .st {
+    font-size: 10.5px;
+    color: var(--muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .gt-lbl .st b {
+    font-weight: 600;
+    color: var(--lc);
+  }
+  .gt-cells {
+    position: relative;
+    flex: none;
+    height: 100%;
+    cursor: pointer;
+  }
+  .gt-row.group .gt-cells {
+    cursor: default;
+  }
+
+  /* 선 + 제목 */
+  .bar {
+    position: absolute;
+    bottom: 7px;
+    height: 6px;
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--lc) 26%, var(--card));
+    transform-origin: left center;
+    animation: barIn 0.5s var(--eo) backwards;
+  }
+  .bar i {
+    position: absolute;
+    inset: 0 auto 0 0;
+    border-radius: 3px;
+    background: var(--lc);
+  }
+  .bar.open {
+    -webkit-mask-image: linear-gradient(to right, #000 60%, transparent);
+    mask-image: linear-gradient(to right, #000 60%, transparent);
+  }
+  /* Task 전체 구간 — 테두리만 있는 선. Subtask 선들이 이 안에 들어온다 */
+  .bar.outline {
+    background: transparent;
+    border: 1.5px solid color-mix(in srgb, var(--lc) 70%, var(--card));
+    height: 8px;
+    bottom: 6px;
+  }
+  /* Task 행 / Subtask 행 */
+  .gt-row.task {
+    border-top: 1px solid rgba(11, 11, 11, 0.08);
+  }
+  .gt-row.task .gt-lbl {
+    background: color-mix(in srgb, var(--lc) 3%, var(--card));
+  }
+  .gt-row.sub {
+    height: 34px;
+  }
+  .gt-row.sub .gt-lbl {
+    padding-left: 24px;
+  }
+  .gt-row.sub .gt-lbl::before {
+    content: "";
+    position: absolute;
+    left: 13px;
+    top: 0;
+    bottom: 0;
+    border-left: 1.5px solid color-mix(in srgb, var(--lc) 35%, var(--card));
+  }
+  .gt-row.sub .ttl {
+    bottom: 14px;
+  }
+  .ttl.task b {
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .ttl .goal {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    font-weight: 600;
+    color: var(--ink);
+    border: 1.5px solid var(--ink);
+    border-radius: 999px;
+    padding: 0 6px;
+    line-height: 1.5;
+  }
+  @keyframes barIn {
+    from {
+      transform: scaleX(0.6);
+      opacity: 0;
+    }
+  }
+  .ttl {
+    position: absolute;
+    bottom: 15px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding-left: 1px;
+    font-size: 11.5px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--ink);
+    white-space: nowrap;
+    animation: chipIn 0.38s var(--eo) backwards;
+  }
+  .ttl .pct {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--lc);
+  }
+  .ttl .who {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .ttl.plan {
+    color: var(--ink2);
+  }
+  .ttl.tbd {
+    color: var(--muted);
+    font-weight: 500;
+    bottom: 11px;
+  }
+  .ttl.tbd::before {
+    content: "";
+    width: 18px;
+    height: 0;
+    border-top: 2px dotted var(--axis);
+  }
+  .gt-row.on .ttl {
+    color: var(--ink);
+  }
+  @keyframes chipIn {
+    from {
+      opacity: 0;
+      transform: translateY(5px);
+    }
+  }
+  .dia {
+    position: absolute;
+    bottom: 5px;
+    width: 10px;
+    height: 10px;
+    background: var(--lc);
+    transform: translateX(-50%) rotate(45deg);
+    border-radius: 2px;
+    box-shadow: 0 0 0 2px var(--card);
+  }
+  .gt-row:hover .gt-cells,
+  .gt-row.on .gt-cells {
+    background: color-mix(in srgb, var(--lc) 4%, transparent);
+  }
+
+  /* 커서 날짜 선 */
+  .gt-scrub {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1.5px;
+    background: var(--ink);
+    opacity: 0.7;
+    pointer-events: none;
+    z-index: 15;
+    display: none;
+  }
+  .gt-scrub span {
+    position: sticky;
+    top: 6px;
+    display: inline-block;
+    transform: translateX(-50%);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--ink);
+    border-radius: 4px;
+    padding: 1px 6px;
+    white-space: nowrap;
+  }
+  .gt-wrap.scrubbing .gt-scrub {
+    display: block;
+  }
+
+  .vc-foot {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+    align-items: center;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .vc-kinds,
+  .vc-certs {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .vc-kinds .k {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .vc-kinds .k i {
+    display: inline-block;
+    width: 26px;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--ink2);
+  }
+  .vc-kinds .k i.outline {
+    background: transparent;
+    border: 1.5px solid var(--ink2);
+    height: 8px;
+  }
+  .vc-kinds .k i.doing {
+    background: linear-gradient(to right, var(--ink2) 50%, rgba(11, 11, 11, 0.18) 50%);
+  }
+  .vc-kinds .k i.plan {
+    background: rgba(11, 11, 11, 0.18);
+  }
+  .vc-kinds .k i.goal {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    transform: rotate(45deg);
+  }
+  .vc-kinds .k i.tbd {
+    height: 0;
+    background: none;
+    border-top: 2px dotted var(--axis);
+  }
+  .gt-cells:focus-visible {
+    outline: 2px solid var(--lc);
+    outline-offset: -2px;
+  }
+
+  /* 툴팁 */
+  #tip {
+    position: fixed;
+    z-index: 70;
+    max-width: 320px;
+    background: #0b0b0b;
+    color: #fff;
+    border-radius: 9px;
+    padding: 9px 12px;
+    font-size: 13px;
+    line-height: 1.55;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(4px) scale(0.97);
+    transform-origin: bottom left;
+    transition:
+      opacity 0.15s var(--eo),
+      transform 0.15s var(--eo);
+    box-shadow: 0 12px 30px rgba(11, 11, 11, 0.3);
+  }
+  #tip.on {
+    opacity: 1;
+    transform: none;
+  }
+  #tip .d {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: #ffd68a;
+    display: block;
+    margin-bottom: 2px;
+  }
+  #tip .tt-sub {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-top: 4px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pop,
+    .bar,
+    .ttl {
+      animation: none;
+    }
+    .pop {
+      opacity: 1;
+      transform: none;
+    }
+    #tip {
+      transform: none;
+      transition: opacity 0.15s var(--eo);
+    }
+  }
+</style>
+</head>
+<body>
+
+
+<main id="stage"></main>
+<div id="tip" role="tooltip"></div>
+
+<script>
+  /* ==================== 확정 데이터 — 유일한 수정 지점 ====================
+     TASKS = 시트의 Task 행. subs = 그 아래 Subtask 행들. 시트 구조를 그대로 옮긴다.
+     s = 제목(선 위에 표시) · t = Task/Note를 합친 한 문장(툴팁)
+     d/e = 시트 Start/End Date(MM-DD) · goal = Note의 목표일 · st = 시트 Progress 문자열
+     who = 담당 열 · subs[].kind = done|doing|plan|tbd · subs[].prog = 시트 Progress %
+     표현 정책은 문서 최상단 주석 참조. */
+  const TITLE = "에디터스쿼드 4분기 로드맵";
+  const PERIOD = "26.09.07 → 26.12.31";
+  const RANGE = ["2026-09-01", "2026-12-31"];
+  const SHEET =
+    "https://docs.google.com/spreadsheets/d/1CWVos7PJPLweo0r2pSx6t0BJwKjPo3iot3NaLrp-sv8/edit";
+  const LANES = {
+    end: "에디터 1.0 종료",
+    undev: "미개발 기능",
+    mob: "모바일 백로그",
+    cto: "CTO Staff 항목",
+  };
+
+  /* 평일에 걸리는 공휴일 — 날짜축에 붉게, 열에 음영. 주말 공휴일은 열이 없으므로 대체공휴일만 넣는다.
+     [짧은 라벨(2자, 축에 표시), 전체 이름(툴팁·커서 라벨)] */
+  const HOLIDAYS = {
+    "09-24": ["추석", "추석 연휴"],
+    "09-25": ["추석", "추석"],
+    "09-28": ["대체", "대체공휴일 (추석 연휴 9/26 토)"],
+    "10-05": ["대체", "대체공휴일 (개천절 10/3 토)"],
+    "10-09": ["한글", "한글날"],
+    "12-25": ["성탄", "성탄절"],
+  };
+
+  const TASKS = [
+    /* ── 에디터 1.0 종료 ── */
+    {
+      lane: "end",
+      s: "[미캔] 디자인 1.0 → 2.0 변환 마이그레이션",
+      d: "10-20",
+      e: "10-20",
+      goal: "10-20",
+      st: "진행중",
+      who: "PD·MB·QA",
+      t: "[미캔] 디자인 1.0 → 2.0 변환 마이그레이션 — 26.1020 종료 목표. 전환기간 풀 확장 → 유예 기간 → 전환 팝업 미노출 + 종료 순",
+      subs: [
+        { kind: "done", d: "09-07", e: "09-19", s: "전환기간 풀 확장", who: "PD·MB·QA", prog: 100 },
+        { kind: "doing", d: "09-07", e: "10-20", s: "전환기간 유예 기간", who: "PD·MB", prog: 50 },
+        { kind: "plan", d: "10-20", e: "10-20", s: "전환 팝업 미노출 + 종료", who: "PD·MB", prog: 0 },
+      ],
+    },
+    {
+      lane: "end",
+      s: "[미캔] 1.0 디자인 아카이빙",
+      d: "10-20",
+      st: "예정",
+      who: "MB",
+      t: "[미캔] 1.0 디자인 아카이빙 — 10/20 시작, 종료일 미정",
+      subs: [
+        {
+          kind: "plan",
+          d: "10-20",
+          s: "아카이빙 시작 (오래된 순서대로)",
+          who: "MB",
+          prog: 0,
+          t: "아카이빙 시작 — 오래된 순서대로 아카이빙 시작, 종료일 미정",
+        },
+      ],
+    },
+    {
+      lane: "end",
+      s: "[공통] 2.0 모바일 안정성",
+      d: "09-08",
+      e: "10-20",
+      goal: "10-20",
+      st: "진행중",
+      who: "MF·QA",
+      t: "[공통] 2.0 모바일 안정성 — 1020 목표",
+      subs: [
+        {
+          kind: "doing",
+          d: "09-08",
+          e: "10-20",
+          s: "인쇄물제작 오픈 가능한 최소 스펙",
+          who: "MF·QA",
+          prog: 5,
+          t: "인쇄물제작 오픈 가능한 최소 스펙 — 종료 일정에 맞춘 취소 스펙을 준비",
+        },
+      ],
+    },
+    {
+      lane: "end",
+      s: "[공통] 2.0 모바일 인쇄물제작",
+      d: "10-20",
+      e: "11-17",
+      goal: "11-17",
+      st: "예정",
+      who: "MF·BF·BB·QA",
+      t: "[공통] 2.0 모바일 인쇄물제작 — 1020 시작 / 1117 종료 목표",
+      subs: [
+        {
+          kind: "plan",
+          d: "10-20",
+          e: "11-17",
+          s: "1달 동안 모든 상품 오픈",
+          who: "MF·BF·BB·QA",
+          prog: 0,
+        },
+      ],
+    },
+    {
+      lane: "end",
+      s: "[비즈] 장바구니 1.0 → 2.0 에디터 오픈",
+      d: "10-12",
+      e: "10-27",
+      goal: "10-27",
+      st: "예정",
+      who: "PD·MF·BF·BB·QA",
+      t: "[비즈] 장바구니 1.0 → 2.0 에디터 오픈 — 26.1027 목표. 공수 파악·디자인 작업 선행 후 실제 작업",
+      subs: [
+        { kind: "plan", d: "10-06", e: "10-08", s: "공수 파악 필요", who: "MF·BF", prog: 0 },
+        { kind: "plan", d: "10-06", e: "10-08", s: "디자인 작업", who: "PD", prog: 0 },
+        { kind: "plan", d: "10-12", e: "10-27", s: "실제 작업", who: "MF·BF·BB·QA", prog: 0 },
+      ],
+    },
+    {
+      lane: "end",
+      s: "[공통] 잔잔 인쇄물제작 티켓 처리",
+      d: "11-03",
+      e: "12-31",
+      st: "예정",
+      who: "PD·MF·BF·BB·QA",
+      t: "[공통] 잔잔 인쇄물제작 티켓 처리 — 0929 기준 30개",
+      subs: [
+        {
+          kind: "plan",
+          d: "11-03",
+          e: "12-31",
+          s: "중요도 기준으로 정리 (30개 중 절반 이상)",
+          who: "PD·MF·BF·BB·QA",
+          prog: 0,
+          t: "중요도 기준으로 정리 필요 — 30개를 모두는 못하지만 절반 이상은 처리할 수 있다",
+        },
+      ],
+    },
+
+    /* ── 미개발 기능 ── */
+    {
+      lane: "undev",
+      s: "[비즈] 장바구니 > 대량 제작",
+      d: "09-29",
+      e: "09-30",
+      st: "검토중",
+      cert: "rev",
+      who: "PD·MF·MB·BF·BB",
+      t: "[비즈] 장바구니 > 대량 제작 — 검토중 (아마 안 할 듯)",
+      subs: [
+        { kind: "done", d: "09-29", e: "09-30", s: "개발 공수 검토", who: "PD·MF·MB·BF·BB", prog: 100 },
+      ],
+    },
+    {
+      lane: "undev",
+      s: "[미캔] 2.0 디자인 승인 완료 시 인쇄물제작",
+      st: "검토중",
+      cert: "rev",
+      t: "[미캔] 2.0 디자인 승인 완료 시 인쇄물제작 — 기능조직 소관, 검토중",
+      subs: [{ kind: "tbd", dl: "검토중", s: "개발 공수 검토" }],
+    },
+    {
+      lane: "undev",
+      s: "[미캔] 2.0 편집 모드에서 댓글 기능",
+      st: "미정",
+      t: "[미캔] 2.0 편집 모드에서 댓글 기능 — 1.0에서도 없었음 / 미정",
+      subs: [],
+    },
+
+    /* ── 모바일 백로그 ── */
+    {
+      lane: "mob",
+      s: "잔여 백로그 티켓 (1001 기준 35개)",
+      d: "10-12",
+      e: "11-17",
+      st: "예정",
+      who: "PD·MF·QA",
+      t: "잔여 백로그 티켓 — 1001 기준 35개. 보통 13 + 중요 1은 필수, 사소한 16·기능 조직 3은 일정 없음",
+      subs: [
+        {
+          kind: "plan",
+          d: "10-12",
+          e: "11-17",
+          s: "보통 (13) + 중요 (1) · 모바일 필수 해결 티켓",
+          who: "PD·MF·QA",
+          prog: 0,
+        },
+        {
+          kind: "tbd",
+          dl: "미정",
+          s: "사소한 (16)",
+          who: "PD·MF",
+          t: "사소한 16건 — 필수 작업 항목은 아님. 한다면 PD 작업 선행 필요 다수",
+        },
+        { kind: "tbd", dl: "장기", s: "기능 조직 (3)", t: "기능 조직 3건 — 장기 백로그 상태" },
+      ],
+    },
+
+    /* ── CTO Staff 항목 ── */
+    {
+      lane: "cto",
+      s: "요소 2.0 API 전환",
+      d: "09-07",
+      st: "진행중",
+      t: "요소 2.0 API 전환 — 기능 조직 주도, 1.0 의존성 제거. 시트에 일정 없음(진행중)",
+      subs: [],
+    },
+    {
+      lane: "cto",
+      s: "영구삭제 리소스 저장소 회수",
+      d: "09-07",
+      st: "진행중",
+      who: "PD",
+      t: "영구삭제 리소스 저장소 회수 — PD + 기능 조직, 스토리지 비용 절감 목표. 시트에 일정 없음(진행중)",
+      subs: [],
+    },
+    {
+      lane: "cto",
+      s: "휴면, 탈퇴 계정 리소스 처리 정책 수립",
+      st: "미착수",
+      t: "휴면, 탈퇴 계정 리소스 처리 정책 수립 — 미착수",
+      subs: [],
+    },
+  ];
+  const CERTS = { goal: "목표", tent: "잠정", rev: "검토중" };
+  const STATUS = { done: "완료", doing: "진행중", plan: "예정" };
+
+  /* ==================== 렌더 (수정 불필요 — 배치는 자동) ==================== */
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) =>
+    String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+  const chip = (c) => `<span class="cert cert-${c}">${CERTS[c]}</span>`;
+  const DW = 26,
+    LW = 168;
+  const YEAR = RANGE[0].slice(0, 4);
+  const WD = ["일", "월", "화", "수", "목", "금", "토"];
+  const key = (dt) =>
+    String(dt.getMonth() + 1).padStart(2, "0") + "-" + String(dt.getDate()).padStart(2, "0");
+  const slash = (k) => k.replace("-", "/");
+
+  /* 평일 열 목록 — 시트 WBS와 같은 축 */
+  const DAYS = [];
+  for (let t = new Date(RANGE[0]); t <= new Date(RANGE[1]); t.setDate(t.getDate() + 1)) {
+    const w = t.getDay();
+    if (w === 0 || w === 6) continue;
+    DAYS.push({ k: key(t), m: t.getMonth() + 1, day: t.getDate(), w });
+  }
+  const IDX = Object.fromEntries(DAYS.map((d, i) => [d.k, i]));
+  /* 시작일이 주말이면 다음 평일, 종료일이 주말이면 이전 평일 */
+  const colOf = (d, fwd = true) => {
+    if (IDX[d] != null) return IDX[d];
+    const t = new Date(YEAR + "-" + d);
+    for (let i = 0; i < 4; i++) {
+      t.setDate(t.getDate() + (fwd ? 1 : -1));
+      const k = key(t);
+      if (IDX[k] != null) return IDX[k];
+    }
+    return fwd ? 0 : DAYS.length - 1;
+  };
+  const TODAY = (() => {
+    const n = new Date();
+    if (+n < +new Date(RANGE[0])) return -1;
+    if (+n > +new Date(RANGE[1]) + 86400000) return DAYS.length;
+    return colOf(key(n), false);
+  })();
+  const todayKey = key(new Date());
+
+  /* 한 항목의 열 구간 — {c0, c1, open} 또는 null(일정 없음) */
+  function spanOf(o) {
+    if (!o.d) return null;
+    return { c0: colOf(o.d), c1: o.e ? colOf(o.e, false) : DAYS.length - 1, open: !o.e };
+  }
+  /* Task 구간 = 시트 Task 날짜 ∪ Subtask 날짜 ∪ 목표일 */
+  function taskSpan(t) {
+    const parts = [spanOf(t), ...t.subs.map(spanOf)].filter(Boolean);
+    if (t.goal) parts.push({ c0: colOf(t.goal), c1: colOf(t.goal, false), open: false });
+    if (!parts.length) return null;
+    return {
+      c0: Math.min(...parts.map((p) => p.c0)),
+      c1: Math.max(...parts.map((p) => p.c1)),
+      open: parts.some((p) => p.open),
+    };
+  }
+  const spanLabel = (sp) =>
+    !sp
+      ? "일정 없음"
+      : sp.open
+        ? `${slash(DAYS[sp.c0].k)} →`
+        : sp.c0 === sp.c1
+          ? slash(DAYS[sp.c0].k)
+          : `${slash(DAYS[sp.c0].k)}~${slash(DAYS[sp.c1].k)}`;
+
+  function render() {
+    const W = DAYS.length * DW;
+    /* 날짜축: 월 구간 + 평일 */
+    const months = [];
+    DAYS.forEach((d, i) => {
+      const last = months[months.length - 1];
+      if (!last || last.m !== d.m) months.push({ m: d.m, from: i, to: i });
+      else last.to = i;
+    });
+    const monthHtml = months
+      .map(
+        (m) =>
+          `<div class="gt-month" style="left:${m.from * DW}px;width:${(m.to - m.from + 1) * DW}px">${m.m}월</div>`,
+      )
+      .join("");
+    const dayHtml = DAYS.map((d, i) => {
+      const h = HOLIDAYS[d.k];
+      const cls = `gt-day${d.w === 1 ? " mon" : ""}${h ? " hol" : ""}${i === TODAY && d.k === todayKey ? " today" : ""}`;
+      const title = h ? ` title="${esc(slash(d.k) + " " + WD[d.w] + " · " + h[1])}"` : "";
+      return `<div class="${cls}" style="left:${i * DW}px"${title}><span>${d.day}</span><span class="w">${h ? esc(h[0]) : WD[d.w]}</span></div>`;
+    }).join("");
+
+    /* 본문 격자 */
+    let grid = DAYS.map(
+      (d, i) => `<div class="gt-col${d.w === 1 ? " mon" : ""}" style="left:${i * DW}px"></div>`,
+    ).join("");
+    grid += DAYS.filter((d) => HOLIDAYS[d.k])
+      .map((d) => `<div class="gt-col holcol" style="left:${IDX[d.k] * DW}px;width:${DW}px"></div>`)
+      .join("");
+    if (TODAY >= 0 && TODAY < DAYS.length) {
+      grid += `<div class="gt-col todaycol" style="left:${TODAY * DW}px;width:${DW}px"></div>`;
+      grid += `<div class="gt-col future" style="left:${(TODAY + 1) * DW}px;right:0"></div>`;
+    } else if (TODAY < 0) {
+      grid += `<div class="gt-col future" style="left:0;right:0"></div>`;
+    }
+
+    let gi = 0;
+    const tipAttr = (o, dl) =>
+      `data-d="${esc(dl)}" data-tip="${esc(o.t || o.s)}"${o.who ? ` data-sub="${esc("담당 " + o.who)}"` : ""}`;
+    const whoHtml = (o) => (o.who ? `<span class="who">${esc(o.who)}</span>` : "");
+
+    /* 공통 행 — cells(선+제목)와 lbl(왼쪽 고정 칸)을 받아 행 하나를 만든다 */
+    const row = (k, cls, tip, lbl, cells, W) =>
+      `<div class="gt-row ${cls} lane-${k}" ${tip}><div class="gt-lbl">${lbl}</div><div class="gt-cells" tabindex="0" style="width:${W}px">${cells}</div></div>`;
+
+    /* 선 + 제목 — outline이면 Task 테두리 선, 아니면 Subtask 채움 선 */
+    const barCells = ({ sp, title, pct, outline, extra, delay, titleCls }) => {
+      const x = sp.c0 * DW,
+        w = Math.max((sp.c1 - sp.c0 + 1) * DW, DW);
+      const fill = !outline && pct ? `<i style="width:${pct}%"></i>` : "";
+      return (
+        `<span class="bar${outline ? " outline" : ""}${sp.open ? " open" : ""}" style="left:${x}px;width:${w}px;animation-delay:${delay}ms">${fill}</span>` +
+        `<span class="ttl ${titleCls}" style="left:${x + 2}px;animation-delay:${delay}ms">${title}${extra}</span>`
+      );
+    };
+    const tbdCells = (title, extra, delay) =>
+      `<span class="ttl tbd" style="left:10px;animation-delay:${delay}ms">${title}${extra}</span>`;
+
+    const rows = Object.entries(LANES)
+      .map(([k, n]) => {
+        const tasks = TASKS.filter((t) => t.lane === k);
+        const head = `<div class="gt-row group lane-${k}"><div class="gt-lbl"><span class="dot"></span>${esc(n)}<span class="st" style="font-weight:500;color:var(--muted)">${tasks.length}건</span></div><div class="gt-cells" style="width:${W}px"></div></div>`;
+        const body = tasks
+          .map((t) => {
+            const delay = 120 + gi++ * 30;
+            const sp = taskSpan(t);
+            const dl = spanLabel(sp);
+            const certHtml = t.cert ? chip(t.cert) : "";
+            const goalHtml = t.goal
+              ? `<span class="goal">목표 ${slash(t.goal)}</span>`
+              : "";
+            const title = `<b>${esc(t.s)}</b>`;
+            let cells;
+            if (!sp) {
+              cells = tbdCells(title, certHtml, delay);
+            } else if (t.subs.length) {
+              /* Subtask가 있는 Task: 전체 구간을 테두리 선으로 감싼다 */
+              cells = barCells({
+                sp,
+                title,
+                outline: true,
+                extra: goalHtml + certHtml + whoHtml(t),
+                delay,
+                titleCls: "task",
+              });
+            } else {
+              /* Subtask가 없는 Task: 자기 선을 그린다 */
+              const kind = t.st === "진행중" ? "doing" : "plan";
+              cells = barCells({
+                sp,
+                title,
+                pct: 0,
+                extra: goalHtml + certHtml + whoHtml(t),
+                delay,
+                titleCls: "task " + kind,
+              });
+            }
+            if (t.goal && sp)
+              cells += `<span class="dia" style="left:${colOf(t.goal) * DW + DW / 2}px"></span>`;
+            const lbl = `<span class="dt">${esc(dl)}</span><span class="st"><b>${esc(t.st || "")}</b></span>`;
+            const taskRow = row(k, "task", tipAttr(t, dl), lbl, cells, W);
+
+            const subRows = t.subs
+              .map((s) => {
+                const d2 = 120 + gi++ * 30;
+                const ssp = spanOf(s);
+                const sdl = s.kind === "tbd" || !ssp ? s.dl || "미정" : spanLabel(ssp);
+                const scert = s.cert ? chip(s.cert) : "";
+                let scells, slbl;
+                if (!ssp) {
+                  scells = tbdCells(esc(s.s), scert + whoHtml(s), d2);
+                  slbl = `<span class="dt">일정 없음</span><span class="st">${esc(sdl)}</span>`;
+                } else {
+                  const pct =
+                    s.kind === "done" ? 100 : s.kind === "doing" ? Math.round(s.prog ?? 0) : 0;
+                  const pctHtml =
+                    s.kind === "doing" && s.prog != null ? `<span class="pct">${pct}%</span>` : "";
+                  scells = barCells({
+                    sp: ssp,
+                    title: esc(s.s),
+                    pct,
+                    extra: pctHtml + scert + whoHtml(s),
+                    delay: d2,
+                    titleCls: s.kind,
+                  });
+                  slbl = `<span class="dt">${esc(sdl)}</span><span class="st"><b>${STATUS[s.kind] || ""}</b>${s.kind === "doing" && s.prog != null ? `${pct}%` : ""}</span>`;
+                }
+                return row(k, "sub", tipAttr(s, sdl), slbl, scells, W);
+              })
+              .join("");
+            return taskRow + subRows;
+          })
+          .join("");
+        return head + body;
+      })
+      .join("");
+
+    $("#stage").innerHTML = `<div class="vc">
+  <header class="vc-head"><h1 class="pop">${esc(TITLE)}</h1><span class="period pop">${esc(PERIOD)}</span></header>
+  <div class="gt-wrap pop">
+    <div class="gt" style="width:${LW + W}px">
+      <div class="gt-head">
+        <div class="gt-corner">기간 · 상태</div>
+        <div class="gt-days" style="width:${W}px">${monthHtml}${dayHtml}</div>
+      </div>
+      <div class="gt-body">
+        <div class="gt-grid" style="width:${W}px">${grid}</div>
+        ${rows}
+      </div>
+      <div class="gt-scrub"><span></span></div>
+    </div>
+  </div>
+  <div class="vc-foot">
+    <div class="vc-kinds">선&nbsp;
+      <span class="k"><i class="outline"></i>Task 전체 구간</span>
+      <span class="k"><i></i>완료</span>
+      <span class="k"><i class="doing"></i>진행중 (채움 = 진행률)</span>
+      <span class="k"><i class="plan"></i>예정</span>
+      <span class="k"><i class="goal"></i>목표일</span>
+      <span class="k"><i class="tbd"></i>일정 없음</span>
+    </div>
+    <div class="vc-certs">확실도&nbsp; ${Object.keys(CERTS).map(chip).join(" ")}</div>
+  </div>
+ </div>`;
+  }
+
+  /* 툴팁 — 그룹·기간 헤더 + 전체 문장 + 담당 */
+  function wireTips() {
+    const tip = $("#tip");
+    document.querySelectorAll(".gt-row[data-tip]").forEach((row) => {
+      const cells = row.querySelector(".gt-cells");
+      const show = () => {
+        let p = row.previousElementSibling,
+          g = "",
+          task = "";
+        while (p && !p.classList.contains("group")) {
+          if (!task && row.classList.contains("sub") && p.classList.contains("task"))
+            task = p.querySelector(".ttl b")?.textContent || "";
+          p = p.previousElementSibling;
+        }
+        if (p) g = p.querySelector(".gt-lbl").textContent.replace(/\d+건$/, "").trim();
+        const hdr = [g, task, row.dataset.d].filter(Boolean).join(" · ");
+        const sub = row.dataset.sub ? `<span class="tt-sub">${esc(row.dataset.sub)}</span>` : "";
+        tip.innerHTML = `<span class="d">${esc(hdr)}</span>${esc(row.dataset.tip)}${sub}`;
+        tip.classList.add("on");
+        const el = row.querySelector(".ttl") || cells;
+        const r = el.getBoundingClientRect();
+        let x = Math.min(Math.max(r.left, 12), innerWidth - 320),
+          y = r.top - tip.offsetHeight - 10;
+        tip.style.transformOrigin = y < 8 ? "top left" : "bottom left";
+        if (y < 8) y = r.bottom + 10;
+        tip.style.left = x + "px";
+        tip.style.top = y + "px";
+        row.classList.add("on");
+      };
+      const hide = () => {
+        tip.classList.remove("on");
+        row.classList.remove("on");
+      };
+      row.addEventListener("mouseenter", show);
+      row.addEventListener("mouseleave", hide);
+      cells.addEventListener("focus", show);
+      cells.addEventListener("blur", hide);
+      cells.addEventListener("click", show);
+    });
+  }
+
+  /* 커서를 따라가는 날짜 선 — 열 단위로 스냅, 상단에 날짜 라벨 */
+  function wireScrub() {
+    const wrap = $(".gt-wrap"),
+      gt = $(".gt"),
+      sc = $(".gt-scrub"),
+      lbl = sc.querySelector("span");
+    const move = (e) => {
+      const r = gt.getBoundingClientRect();
+      const x = e.clientX - r.left - LW;
+      if (x < 0) {
+        wrap.classList.remove("scrubbing");
+        return;
+      }
+      const i = Math.min(Math.max(Math.floor(x / DW), 0), DAYS.length - 1);
+      const d = DAYS[i];
+      sc.style.left = LW + i * DW + DW / 2 + "px";
+      const h = HOLIDAYS[d.k];
+      lbl.textContent =
+        (i === TODAY ? "오늘 " : "") + slash(d.k) + " " + WD[d.w] + (h ? " · " + h[1] : "");
+      wrap.classList.add("scrubbing");
+    };
+    wrap.addEventListener("pointermove", move);
+    wrap.addEventListener("pointerleave", () => wrap.classList.remove("scrubbing"));
+    /* 처음 열면 오늘 열이 보이도록 가로 스크롤 */
+    if (TODAY > 0) {
+      const target = TODAY * DW - (wrap.clientWidth - LW) * 0.35;
+      wrap.scrollLeft = Math.max(0, target);
+    }
+  }
+
+  render();
+  wireTips();
+  wireScrub();
+</script>
+
+</body>
+</html>
