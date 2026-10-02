@@ -25,6 +25,7 @@
      · 담당(who)은 시트 PD·MF·MB·BF·BB·QA 열을 그대로 옮긴다. 선 제목 옆 + 툴팁 하단에 표시.
          Task 행(✓)  → "PD·MB·QA"            역할만
          Subtask 행  → "PD 1 · MB 1 · QA 1"   역할별 인원(시트 숫자). 숫자는 굵게.
+     · Task 행을 클릭하면 아래 Subtask 행이 접히고 다시 클릭하면 펼쳐진다 (라벨 왼쪽 ▸/▾, 접힘 건수 표시).
      · '오늘'은 열람 시각에서 계산한다 — 열 강조 + 미래 음영. 호버하면 날짜 선이 커서를 따라간다.
      · 갱신은 ANCHORS/ITEMS 편집이 전부 — 좌표는 자동.
      · 다크모드 비지원(라이트 고정): 레인 팔레트가 라이트 서피스 기준 검증됨. -->
@@ -433,6 +434,37 @@
   }
   .gt-row.sub {
     height: 34px;
+  }
+  /* 접기/펼치기 — Task 행 클릭으로 아래 Subtask 행을 숨긴다 */
+  .gt-row.task.has-subs {
+    cursor: pointer;
+  }
+  .gt-row.task .tg {
+    position: absolute;
+    left: 3px;
+    top: 50%;
+    width: 0;
+    height: 0;
+    transform: translateY(-50%) rotate(90deg);
+    border-left: 5px solid color-mix(in srgb, var(--lc) 70%, var(--card));
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    transition: transform 0.15s ease;
+  }
+  .gt-row.task.folded .tg {
+    transform: translateY(-50%) rotate(0deg);
+  }
+  .gt-row.task .fold-n {
+    display: none;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    color: var(--muted);
+  }
+  .gt-row.task.folded .fold-n {
+    display: inline;
+  }
+  .gt-row.sub.hid {
+    display: none;
   }
   .gt-row.sub .gt-lbl {
     padding-left: 24px;
@@ -1101,8 +1133,11 @@
             }
             if (t.goal && sp)
               cells += `<span class="dia" style="left:${colOf(t.goal) * DW + DW / 2}px"></span>`;
-            const lbl = `<span class="dt">${esc(dl)}</span><span class="st"><b>${esc(taskSt(t))}</b></span>`;
-            const taskRow = row(k, "task", tipAttr(t, dl), lbl, cells, W);
+            const n = t.subs.length;
+            const tg = n ? `<span class="tg" aria-hidden="true"></span>` : "";
+            const foldN = n ? `<span class="fold-n">하위 ${n}건 접힘</span>` : "";
+            const lbl = `${tg}<span class="dt">${esc(dl)}</span><span class="st"><b>${esc(taskSt(t))}</b>${foldN}</span>`;
+            const taskRow = row(k, n ? "task has-subs" : "task", tipAttr(t, dl), lbl, cells, W);
 
             const subRows = t.subs
               .map((s) => {
@@ -1239,8 +1274,35 @@
     }
   }
 
+  /* 접기/펼치기 — Task 행(라벨·선 영역 모두) 클릭 또는 Enter/Space */
+  function wireFold() {
+    document.querySelectorAll(".gt-row.task.has-subs").forEach((row) => {
+      const subs = [];
+      let p = row.nextElementSibling;
+      while (p && p.classList.contains("sub")) {
+        subs.push(p);
+        p = p.nextElementSibling;
+      }
+      const toggle = () => {
+        const fold = !row.classList.contains("folded");
+        row.classList.toggle("folded", fold);
+        subs.forEach((r) => r.classList.toggle("hid", fold));
+        row.setAttribute("aria-expanded", String(!fold));
+      };
+      row.setAttribute("aria-expanded", "true");
+      row.addEventListener("click", toggle);
+      row.querySelector(".gt-cells").addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          toggle();
+        }
+      });
+    });
+  }
+
   render();
   wireTips();
+  wireFold();
   wireScrub();
 </script>
 
