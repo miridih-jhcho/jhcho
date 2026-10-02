@@ -20,6 +20,8 @@
          plan  옅은 선                       — 예정
          tbd   선 없음, 왼쪽에 흐린 제목     — Start/End Date가 비어 있는 검토중·미정 항목
        e(종료일)가 없으면 open: 선이 범위 끝까지 이어지다 흐려진다.
+     · Task 상태(st)는 시트 Progress 문자열이지만, Subtask가 전부 done이면 "완료"로 파생되고
+       Task 테두리 선이 채워진다 (시트 값보다 우선).
      · 담당(who)은 시트 PD·MF·MB·BF·BB·QA 열을 그대로 옮긴다. 선 제목 옆 + 툴팁 하단에 표시.
          Task 행(✓)  → "PD·MB·QA"            역할만
          Subtask 행  → "PD 1 · MB 1 · QA 1"   역할별 인원(시트 숫자). 숫자는 굵게.
@@ -416,6 +418,11 @@
     border: 1.5px solid color-mix(in srgb, var(--lc) 70%, var(--card));
     height: 8px;
     bottom: 6px;
+  }
+  /* 하위 Subtask가 전부 완료된 Task — 테두리 안을 채워 완료임을 보인다 */
+  .bar.outline.done {
+    border-color: var(--lc);
+    background: color-mix(in srgb, var(--lc) 28%, var(--card));
   }
   /* Task 행 / Subtask 행 */
   .gt-row.task {
@@ -828,9 +835,8 @@
       d: "09-29",
       e: "09-30",
       st: "검토중",
-      cert: "rev",
       who: "PD·MF·MB·BF·BB",
-      t: "[비즈] 장바구니 > 대량 제작 — 검토중 (아마 안 할 듯)",
+      t: "[비즈] 장바구니 > 대량 제작 — 9/29~9/30 개발 공수 검토 완료 (아마 안 할 듯)",
       subs: [
         { kind: "done", d: "09-29", e: "09-30", s: "개발 공수 검토", who: "PD 1 · MF 1 · MB 1 · BF 1 · BB 1", prog: 100 },
       ],
@@ -917,6 +923,10 @@
     },
   ];
   const CERTS = { goal: "목표", tent: "잠정", rev: "검토중" };
+  /* Task 상태 파생 — Subtask가 있고 전부 done이면 시트 값과 무관하게 "완료".
+     그 외에는 시트 Progress 문자열(st)을 그대로 쓴다. */
+  const allDone = (t) => t.subs.length > 0 && t.subs.every((s) => s.kind === "done");
+  const taskSt = (t) => (allDone(t) ? "완료" : t.st || "");
   const STATUS = { done: "완료", doing: "진행중", plan: "예정" };
 
   /* ==================== 렌더 (수정 불필요 — 배치는 자동) ==================== */
@@ -1037,12 +1047,12 @@
       `<div class="gt-row ${cls} lane-${k}" ${tip}><div class="gt-lbl">${lbl}</div><div class="gt-cells" tabindex="0" style="width:${W}px">${cells}</div></div>`;
 
     /* 선 + 제목 — outline이면 Task 테두리 선, 아니면 Subtask 채움 선 */
-    const barCells = ({ sp, title, pct, outline, extra, delay, titleCls }) => {
+    const barCells = ({ sp, title, pct, outline, done, extra, delay, titleCls }) => {
       const x = sp.c0 * DW,
         w = Math.max((sp.c1 - sp.c0 + 1) * DW, DW);
       const fill = !outline && pct ? `<i style="width:${pct}%"></i>` : "";
       return (
-        `<span class="bar${outline ? " outline" : ""}${sp.open ? " open" : ""}" style="left:${x}px;width:${w}px;animation-delay:${delay}ms">${fill}</span>` +
+        `<span class="bar${outline ? " outline" : ""}${done ? " done" : ""}${sp.open ? " open" : ""}" style="left:${x}px;width:${w}px;animation-delay:${delay}ms">${fill}</span>` +
         `<span class="ttl ${titleCls}" style="left:${x + 2}px;animation-delay:${delay}ms">${title}${extra}</span>`
       );
     };
@@ -1072,6 +1082,7 @@
                 sp,
                 title,
                 outline: true,
+                done: allDone(t),
                 extra: goalHtml + certHtml + whoHtml(t),
                 delay,
                 titleCls: "task",
@@ -1090,7 +1101,7 @@
             }
             if (t.goal && sp)
               cells += `<span class="dia" style="left:${colOf(t.goal) * DW + DW / 2}px"></span>`;
-            const lbl = `<span class="dt">${esc(dl)}</span><span class="st"><b>${esc(t.st || "")}</b></span>`;
+            const lbl = `<span class="dt">${esc(dl)}</span><span class="st"><b>${esc(taskSt(t))}</b></span>`;
             const taskRow = row(k, "task", tipAttr(t, dl), lbl, cells, W);
 
             const subRows = t.subs
