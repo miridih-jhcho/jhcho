@@ -25,7 +25,7 @@
      · 담당(who)은 시트 PD·MF·MB·BF·BB·QA 열을 그대로 옮긴다. 선 제목 옆 + 툴팁 하단에 표시.
          Task 행(✓)  → "PD·MB·QA"            역할만
          Subtask 행  → "PD 1 · MB 1 · QA 1"   역할별 인원(시트 숫자). 숫자는 굵게.
-         change가 있으면 → "MF 4→3 (10/6) · QA 2" + 선 위 세로 눈금. 툴팁에 전/후 풀어쓰기.
+         change가 있으면 → 왼쪽은 시작 인원, 변경일 위치에 세로 눈금 + "MF 3 · QA 2". 툴팁에 전/후 풀어쓰기.
      · Task 행을 클릭하면 아래 Subtask 행이 접히고 다시 클릭하면 펼쳐진다 (라벨 왼쪽 ▸/▾, 접힘 건수 표시).
      · '오늘'은 열람 시각에서 계산한다 — 열 강조 + 미래 음영. 호버하면 날짜 선이 커서를 따라간다.
      · 갱신은 ANCHORS/ITEMS 편집이 전부 — 좌표는 자동.
@@ -534,17 +534,10 @@
   .ttl .who .sep {
     opacity: 0.5;
   }
-  /* 담당 변경 — 이전 인원은 취소선, 변경일은 괄호로 */
-  .ttl .who s {
-    text-decoration: line-through;
-    opacity: 0.6;
+  /* 담당 변경 지점 — 선 위에 세로 눈금, 그 오른쪽 위에 변경 후 인원 */
+  .ttl.chg-lbl .who {
+    color: var(--ink2);
   }
-  .ttl .who em {
-    font-style: normal;
-    margin-left: 3px;
-    opacity: 0.75;
-  }
-  /* 담당 변경 지점 — 선 위에 세로 눈금 */
   .chg {
     position: absolute;
     bottom: 4px;
@@ -755,7 +748,7 @@
      s = 제목(선 위에 표시) · t = Task/Note를 합친 한 문장(툴팁)
      d/e = 시트 Start/End Date(MM-DD) · goal = Note의 목표일 · st = 시트 Progress 문자열
      who = 담당 열 · subs[].kind = done|doing|plan|tbd · subs[].prog = 시트 Progress %
-     subs[].change = { d: "MM-DD", who: "변경 후 담당" } — 그 날부터 인원이 바뀜. 선에 눈금 + "MF 4→3 (10/6)"
+     subs[].change = { d: "MM-DD", who: "변경 후 담당" } — 그 날부터 인원이 바뀜. 선에 눈금 + 눈금 위에 변경 후 인원
      표현 정책은 문서 최상단 주석 참조. */
   const TITLE = "에디터스쿼드 4분기 로드맵";
   const PERIOD = "26.09.07 → 26.12.31";
@@ -1096,29 +1089,7 @@
     }
 
     let gi = 0;
-    /* 담당 변경(change) — 변경 전/후 문자열을 비교해 바뀐 역할만 "MF 4→3"으로, 그 뒤에 (M/D) */
-    const parseWho = (w) =>
-      (w || "")
-        .split(" · ")
-        .map((t) => t.match(/^([A-Z]{2})(?: (\d+))?$/))
-        .filter(Boolean)
-        .map((m) => [m[1], m[2] ? +m[2] : null]);
-    const whoLabel = (o) => {
-      if (!o.change) return o.who || "";
-      const before = parseWho(o.who),
-        after = Object.fromEntries(parseWho(o.change.who));
-      const seen = new Set();
-      const toks = before.map(([r, n]) => {
-        seen.add(r);
-        const m = after[r] ?? 0;
-        return m === n ? `${r} ${n}` : `${r} ${n}→${m}`;
-      });
-      for (const [r, m] of Object.entries(after)) if (!seen.has(r)) toks.push(`${r} 0→${m}`);
-      const [mm, dd] = o.change.d.split("-");
-      const last = toks.map((t) => t.includes("→")).lastIndexOf(true);
-      if (last >= 0) toks[last] += ` (${+mm}/${+dd})`;
-      return toks.join(" · ");
-    };
+    /* 담당 변경(change) — 선 위 눈금 자리에 변경 후 인원을 적는다. 왼쪽 표기는 시작 인원 */
     const whoTip = (o) => {
       if (!o.who) return "";
       if (!o.change) return "담당 " + o.who;
@@ -1128,21 +1099,12 @@
     const tipAttr = (o, dl) =>
       `data-d="${esc(dl)}" data-tip="${esc(o.t || o.s)}"${o.who ? ` data-sub="${esc(whoTip(o))}"` : ""}`;
     /* 담당 — "PD 1 · MB 1"처럼 역할 뒤 숫자(인원)가 있으면 숫자를 굵게, 없으면(Task ✓ 행) 그대로 */
-    const whoHtml = (o) =>
-      o.who
-        ? `<span class="who">${whoLabel(o)
-            .split(" · ")
-            .map((tok) =>
-              tok.replace(
-                /^([A-Z]{2}) (\d+)(?:→(\d+))?( \(\d+\/\d+\))?$/,
-                (_, r, n, m, d) =>
-                  m == null
-                    ? `${r}&nbsp;<b>${n}</b>`
-                    : `${r}&nbsp;<s>${n}</s>→<b>${m}</b>${d ? `<em>${d.trim()}</em>` : ""}`,
-              ),
-            )
-            .join(' <span class="sep">·</span> ')}</span>`
-        : "";
+    const whoFmt = (w) =>
+      w
+        .split(" · ")
+        .map((tok) => tok.replace(/^([A-Z]{2}) (\d+)$/, (_, r, n) => `${r}&nbsp;<b>${n}</b>`))
+        .join(' <span class="sep">·</span> ');
+    const whoHtml = (o) => (o.who ? `<span class="who">${whoFmt(o.who)}</span>` : "");
 
     /* 공통 행 — cells(선+제목)와 lbl(왼쪽 고정 칸)을 받아 행 하나를 만든다 */
     const row = (k, cls, tip, lbl, cells, W) =>
@@ -1234,7 +1196,10 @@
                   });
                   if (s.change) {
                     const [mm, dd] = s.change.d.split("-");
-                    scells += `<span class="chg" style="left:${colOf(s.change.d) * DW}px;animation-delay:${d2}ms" title="${esc(`${+mm}/${+dd}부터 ${s.change.who}`)}"></span>`;
+                    const cx = colOf(s.change.d) * DW;
+                    scells +=
+                      `<span class="chg" style="left:${cx}px;animation-delay:${d2}ms" title="${esc(`${+mm}/${+dd}부터 ${s.change.who}`)}"></span>` +
+                      `<span class="ttl chg-lbl" style="left:${cx + 5}px;animation-delay:${d2}ms"><span class="who">${whoFmt(s.change.who)}</span></span>`;
                   }
                   slbl = `<span class="dt">${esc(sdl)}</span><span class="st"><b>${STATUS[s.kind] || ""}</b>${s.kind === "doing" && s.prog != null ? `${pct}%` : ""}</span>`;
                 }
